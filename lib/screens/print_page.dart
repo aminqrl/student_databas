@@ -1,98 +1,77 @@
-import 'dart:convert';
-import 'dart:typed_data';
+
 import 'package:bluetooth_print_plus/bluetooth_print_plus.dart';
 import 'package:flutter/material.dart';
 import '../model/student.dart';
 
 class PrintPage extends StatefulWidget {
   final Student student;
-
-  const PrintPage({Key? key, required this.student}) : super(key: key);
+  const PrintPage({super.key , required this.student});
 
   @override
-  _PrintPageState createState() => _PrintPageState();
+  State<PrintPage> createState() => _PrintPageState();
 }
 
 class _PrintPageState extends State<PrintPage> {
+
   BluetoothPrintPlus bluetoothPrint = BluetoothPrintPlus();
   List<BluetoothDevice> _devices = [];
-  String _deviceMessage = "No devices found";
+  String _devicesMsg = "";
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      initPrinter();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => {initPrinter()});
   }
 
   Future<void> initPrinter() async {
-    BluetoothPrintPlus.startScan(timeout: const Duration(seconds: 5));
-    BluetoothPrintPlus.scanResults.listen((devices) {
-      if (!mounted) return;
+    await BluetoothPrintPlus.startScan(timeout: Duration(seconds: 10));
 
-      setState(() {
-        _devices = devices;
-        if (_devices.isEmpty) {
-          _deviceMessage = "No devices found";
-        }
-      });
-    });
-  }
-
-  Future<void> _startPrint(BluetoothDevice device) async {
-    try {
-      await BluetoothPrintPlus.connect(device);
-      String printData = """
-        ID: ${widget.student.id}
-        Name: ${widget.student.name}
-        Course: ${widget.student.course}
-        Mobile: ${widget.student.mobile}
-        Total Fee: ${widget.student.totalFee}
-        Fee Paid: ${widget.student.feePaid}
-        Date: ${widget.student.date}
-      """;
-
-      Uint8List encodedData = Uint8List.fromList(utf8.encode(printData));
-      await BluetoothPrintPlus.write(encodedData);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Print successful')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Print failed: $e')),
-      );
-    } finally {
-      BluetoothPrintPlus.disconnect();
-    }
+    if (!mounted) return;
+    BluetoothPrintPlus.scanResults.listen(
+          (val) {
+        if (!mounted) return;
+        setState(() => {_devices = val});
+        if (_devices.isEmpty)
+          setState(() {
+            _devicesMsg = "No Devices";
+          });
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Printer'),
-        backgroundColor: Colors.blue,
+        title: Text('Select Printer'),
+        backgroundColor: Colors.redAccent,
       ),
       body: _devices.isEmpty
           ? Center(
-        child: Text(_deviceMessage),
+        child: Text(_devicesMsg ?? ''),
       )
           : ListView.builder(
         itemCount: _devices.length,
-        itemBuilder: (context, index) {
-          BluetoothDevice device = _devices[index];
+        itemBuilder: (c, i) {
           return ListTile(
-            leading: const Icon(Icons.print),
-            title: Text(device.name),
-            subtitle: Text(device.address),
+            leading: Icon(Icons.print),
+            title: Text(_devices[i].name.toString()),
+            subtitle: Text(_devices[i].address.toString()),
             onTap: () {
-              _startPrint(device);
+              _startPrint(_devices[i]);
             },
           );
         },
       ),
     );
+  }
+  Future<void> _startPrint(BluetoothDevice device) async {
+    if (device != null && device.address != null) {
+      await BluetoothPrintPlus.connect(device);
+
+
+
+
+    }
   }
 }

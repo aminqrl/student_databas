@@ -40,7 +40,7 @@ dependencies:
   fluttertoast:
   intl:
   url_launcher:
-  bluetooth_print_plus: ^2.4.5
+  bluetooth_print_plus:
 
 
 
